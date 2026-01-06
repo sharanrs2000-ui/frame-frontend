@@ -304,9 +304,10 @@ class ReframeApp {
             }
 
             const data = await response.json();
-
+            console.log('API RESPONSE:', data);
             // Handle new JSON response format - pass both prompt and full data
-            this.showOutputState(prompt, data.reframed ? data : data.restructured_prompt || prompt, data.reframed !== undefined);
+            this.showOutputState(prompt, data.reframed ? data : data.restructured_prompt || prompt, data.reframed !== undefined
+            );
 
         } catch (error) {
             // Fallback: show original prompt with error notice
@@ -321,19 +322,21 @@ class ReframeApp {
             this.originalPromptBubble.textContent = originalPrompt;
         }
 
-        let output, apiReady;
+        
+        let output = '';
+        let apiReady = null;
 
-        // Handle new JSON format or old format
-        if (isNewFormat && typeof responseData === 'object' && responseData.reframed) {
-            output = responseData.reframed.raw || '';
-            apiReady = responseData.reframed.api_ready;
-        } else if (typeof responseData === 'string') {
-            output = responseData;
-            apiReady = null;
+        if (responseData && typeof responseData === 'object') {
+            if (responseData.reframed && responseData.reframed.raw) {
+                output = responseData.reframed.raw;
+                apiReady = responseData.reframed.api_ready || null;
+            } else if (responseData.restructured_prompt) {
+                output = responseData.restructured_prompt;
+            } else {
+                output = JSON.stringify(responseData, null, 2);
+            }
         } else {
-            // Fallback for plain text or old format
-            output = responseData.restructured_prompt || responseData.reframed?.raw || String(responseData);
-            apiReady = null;
+        output = String(responseData);
         }
 
         // Set output content - Always show the enhanced prompt text
