@@ -289,7 +289,7 @@ class ReframeApp {
 
     async restructurePrompt(prompt, clarifications) {
         try {
-            const response = await fetch('http://localhost:3000/api/reframe', {
+            const response = await fetch('https://frame-backend-3nbs.onrender.com/api/reframe', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -438,7 +438,7 @@ class ReframeApp {
         }
 
         try {
-            const response = await fetch('http://localhost:3000/api/prompts/save', {
+            const response = await fetch('https://frame-backend-3nbs.onrender.com/api/prompts/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(this.state.currentOutput)
@@ -503,7 +503,7 @@ class ReframeApp {
             }
 
             // Redirect to Google OAuth
-            window.location.href = 'http://localhost:3000/api/auth/google';
+            window.location.href = 'https://frame-backend-3nbs.onrender.com/api/auth/google';
         } catch (error) {
             this.showToast('Authentication failed. Please try again.');
             console.error('Auth error:', error);
@@ -522,7 +522,7 @@ class ReframeApp {
 
     async loadSavedPrompts() {
         try {
-            const response = await fetch('http://localhost:3000/api/prompts');
+            const response = await fetch('https://frame-backend-3nbs.onrender.com/api/prompts');
 
             if (!response.ok) {
                 throw new Error('Failed to load prompts');
