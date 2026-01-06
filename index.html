@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reframe - AI Prompt Refiner</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Google Fonts - Figtree -->
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Google Fonts - Inter for output state -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet">
+
+    <!-- Tailwind Config -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#6F4EC1",
+                        "primary-hover": "#5a3eb0",
+                    },
+                    fontFamily: {
+                        sans: ['Figtree', 'sans-serif'],
+                    },
+                },
+            },
+        };
+    </script>
+
+    <style>
+        body {
+            font-family: 'Figtree', sans-serif;
+            position: relative;
+            overflow-x: hidden;
+            background: linear-gradient(135deg, #fdfcff 0%, #f9f7ff 25%, #f5f3ff 50%, #f1eef9 75%, #eeebf7 100%);
+        }
+
+        /* Animated Glassmorphism Background - Lighter with Random Positions */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background:
+                radial-gradient(circle at 15% 25%, rgba(159, 122, 234, 0.08) 0%, transparent 45%),
+                radial-gradient(circle at 85% 65%, rgba(111, 78, 193, 0.06) 0%, transparent 40%),
+                radial-gradient(circle at 45% 80%, rgba(186, 148, 255, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 70% 20%, rgba(159, 122, 234, 0.04) 0%, transparent 35%),
+                radial-gradient(circle at 30% 60%, rgba(111, 78, 193, 0.05) 0%, transparent 38%);
+            animation: floatBackground 25s ease-in-out infinite;
+        }
+
+        @keyframes floatBackground {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+
+            50% {
+                opacity: 0.7;
+                transform: scale(1.08) translateY(-15px);
+            }
+        }
+
+        /* Microsoft Fluent Design - Textarea Focus */
+        .fluent-input {
+            position: relative;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fluent-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(111, 78, 193, 0.25), 0 6px 20px rgba(111, 78, 193, 0.15);
+        }
+
+        .fluent-input::before {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #9f7aea, #6f4ec1);
+            transform: scaleX(0);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fluent-input:focus::before {
+            transform: scaleX(1);
+        }
+
+        /* Enhanced Glassmorphism Output UI */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, rgba(159, 122, 234, 0.6), rgba(111, 78, 193, 0.6));
+            border-radius: 20px;
+            border: 2px solid transparent;
+            background-clip: content-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, rgba(159, 122, 234, 0.8), rgba(111, 78, 193, 0.8));
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow:
+                0 8px 32px rgba(111, 78, 193, 0.08),
+                0 2px 8px rgba(159, 122, 234, 0.05),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .chat-bubble {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow:
+                0 4px 16px rgba(111, 78, 193, 0.1),
+                0 1px 4px rgba(159, 122, 234, 0.08);
+        }
+
+        @keyframes fade-in-up {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fade-in-up 0.6s ease-out;
+        }
+
+        /* Purple glow on focus  */
+        .glass-panel:focus-within {
+            box-shadow:
+                0 8px 32px rgba(111, 78, 193, 0.15),
+                0 2px 8px rgba(159, 122, 234, 0.1),
+                0 0 0 4px rgba(111, 78, 193, 0.1),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+
+        /* Mobile responsive word-wrap and overflow prevention */
+        #outputContent,
+        #outputContent * {
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        #outputContent pre,
+        #outputContent code {
+            white-space: pre-wrap;
+            overflow-wrap: break-word;
+            word-break: break-all;
+            max-width: 100%;
+        }
+
+        /* Ensure all containers prevent horizontal overflow */
+        body {
+            overflow-x: hidden;
+        }
+
+        .glass-panel,
+        .chat-bubble {
+            max-width: 100%;
+            overflow-wrap: break-word;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="fixed top-0 left-0 right-0 w-full bg-white/70 backdrop-blur-md border-b border-gray-100 z-50">
+        <div class="px-4 md:px-6 py-6 flex justify-between items-center max-w-7xl mx-auto">
+            <div class="flex items-center select-none">
+                <span class="text-xl font-semibold text-primary mr-1">Re</span>
+                <div class="bg-primary text-white text-lg font-bold px-2 py-0.5 rounded-md">frame</div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <!-- Login Button -->
+                <button id="loginBtn"
+                    class="px-6 py-2 rounded-full bg-white border border-gray-200 text-gray-900 font-medium text-sm hover:bg-gray-50 transition-all shadow-sm flex items-center gap-2">
+                    Login
+                </button>
+
+                <!-- User Profile (hidden by default) -->
+                <div id="userProfile" class="hidden flex items-center gap-3">
+                    <img id="userAvatar" src="" alt="User" class="w-8 h-8 rounded-full">
+                    <span id="userName" class="font-medium text-sm text-gray-900"></span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow flex flex-col items-center justify-center px-4 md:px-6 pt-24">
+
+        <!-- Entry State -->
+        <div id="entryState" class="w-full">
+            <!-- Headline -->
+            <div class="text-center mb-10 w-full max-w-5xl mx-auto space-y-3">
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-gray-900">
+                    What would you like to reframe?
+                </h1>
+                <p class="text-gray-600 text-sm md:text-base font-normal px-4">
+                    Reframe rewrites your input into a clear prompt for the AI you choose. It does not generate answers.
+                </p>
+            </div>
+
+            <!-- Input Card -->
+            <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6">
+                <!-- Textarea -->
+                <textarea id="promptInput"
+                    class="fluent-input w-full min-h-[60px] bg-transparent border-none text-base text-gray-900 placeholder-gray-400 focus:ring-0 resize-none p-0 pt-2 sm:pt-0 mb-5 sm:mb-5"
+                    placeholder="Paste your prompt, idea, or instruction here"></textarea>
+
+                <!-- Model Selector & Button -->
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 sm:gap-5">
+                    <!-- Model Pills -->
+                    <div class="w-full md:w-auto py-2 sm:py-0">
+                        <label class="block text-xs font-normal text-gray-500 mb-3 sm:mb-2.5">
+                            Which AI will you use this prompt in?
+                        </label>
+                        <div id="modelPills" class="flex flex-wrap gap-x-1 gap-y-[1.3rem] sm:gap-2">
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="ai-model" type="radio" value="gemini"
+                                    data-model="gemini" />
+                                <span
+                                    class="px-4 py-2 sm:py-1.5 rounded-full border border-gray-300 bg-white text-sm font-normal text-gray-700 peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white transition-all hover:border-primary/50">
+                                    Gemini
+                                </span>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input checked class="peer sr-only" name="ai-model" type="radio" value="chatgpt"
+                                    data-model="chatgpt" />
+                                <span
+                                    class="px-4 py-2 sm:py-1.5 rounded-full border border-gray-300 bg-white text-sm font-normal text-gray-700 peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white transition-all hover:border-primary/50">
+                                    Chatgpt
+                                </span>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="ai-model" type="radio" value="perplexity"
+                                    data-model="perplexity" />
+                                <span
+                                    class="px-4 py-2 sm:py-1.5 rounded-full border border-gray-300 bg-white text-sm font-normal text-gray-700 peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white transition-all hover:border-primary/50">
+                                    Perplexity
+                                </span>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="ai-model" type="radio" value="claude"
+                                    data-model="claude" />
+                                <span
+                                    class="px-4 py-2 sm:py-1.5 rounded-full border border-gray-300 bg-white text-sm font-normal text-gray-700 peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white transition-all hover:border-primary/50">
+                                    Claude
+                                </span>
+                            </label>
+
+                            <label class="cursor-pointer">
+                                <input class="peer sr-only" name="ai-model" type="radio" value="others"
+                                    data-model="others" />
+                                <span
+                                    class="px-4 py-2 sm:py-1.5 rounded-full border border-gray-300 bg-white text-sm font-normal text-gray-700 peer-checked:bg-primary peer-checked:border-primary peer-checked:text-white transition-all hover:border-primary/50">
+                                    Others
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Reframe Button -->
+                    <button id="reframeBtn"
+                        class="bg-primary hover:bg-primary-hover text-white font-medium rounded-full px-6 py-3 sm:py-2.5 flex items-center gap-2.5 transition-all shadow-md shadow-primary/20 w-full md:w-auto justify-center transform hover:scale-[1.02] mt-2 sm:mt-0">
+                        <span class="text-sm btn-text">Reframe</span>
+                        <div class="text-[10px] bg-white/20 rounded px-2 py-0.5 font-mono">
+                            ctrl+enter
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Clarification State (Hidden) -->
+        <div id="clarificationState" class="hidden w-full max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 md:p-8">
+                <p id="inputSummary" class="text-sm text-gray-600 mb-6 p-4 bg-gray-50 rounded-xl"></p>
+
+                <h3 class="text-xl font-semibold mb-6 text-gray-900">We have a few clarifications</h3>
+
+                <form id="clarificationForm" class="space-y-6 mb-6"></form>
+
+                <div class="flex flex-col gap-4">
+                    <button id="reframeWithAnswersBtn"
+                        class="w-full bg-primary hover:bg-primary-hover text-white font-medium rounded-full px-6 py-3 transition-all shadow-md">
+                        Reframe with answers
+                    </button>
+                    <a href="#" id="skipLink"
+                        class="text-center text-sm text-gray-600 hover:text-primary transition-colors">
+                        Skip and reframe anyway
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Output State (Hidden) -->
+        <div id="outputState" class="hidden w-full font-['Inter'] pt-12 pb-12">
+            <!-- Main Content Area -->
+            <main class="w-full max-w-4xl mx-auto px-4 pb-40 flex flex-col gap-10 items-center z-10">
+                <!-- User Message Bubble (Original Prompt) -->
+                <div
+                    class="self-end max-w-[85%] lg:max-w-xl w-auto transform transition-all hover:-translate-y-1 duration-300">
+                    <div
+                        class="chat-bubble rounded-2xl rounded-tr-sm px-6 py-5 text-base leading-relaxed text-gray-800 relative overflow-hidden group">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-white/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                        </div>
+                        <span id="originalPromptBubble"></span>
+                    </div>
+                </div>
+
+                <!-- Enhanced Prompt Section -->
+                <div class="self-start max-w-4xl animate-fade-in-up">
+                    <h2 id="outputTitle"
+                        class="text-lg font-bold text-gray-900 mb-5 uppercase tracking-wide flex items-center gap-3 pl-1">
+                        Enhanced Prompt
+                    </h2>
+
+                    <div
+                        class="glass-panel rounded-3xl p-6 md:p-8 lg:p-10 relative overflow-hidden transition-all duration-300 hover:shadow-glass-dark/10">
+                        <!-- Decorative Background Elements -->
+                        <div
+                            class="absolute -top-32 -right-32 w-80 h-80 bg-primary/10 rounded-full blur-[80px] pointer-events-none">
+                        </div>
+                        <div
+                            class="absolute bottom-0 left-0 w-full h-1/3 bg-gradient-to-t from-white/20 to-transparent pointer-events-none">
+                        </div>
+
+                        <!-- Header -->
+                        <div class="flex justify-between items-start mb-8 relative z-10">
+                            <span
+                                class="hidden md:inline-block text-[10px] font-bold text-primary uppercase tracking-[0.2em] bg-primary/5 border border-primary/10 px-3 py-1.5 rounded-full">Enhanced
+                                prompt</span>
+
+                            <div class="flex items-center gap-3">
+                                <button id="saveBtn"
+                                    class="text-gray-400 hover:text-primary transition-colors p-2 rounded-full hover:bg-primary/5">
+                                    <span id="starIcon" class="material-icons-round text-xl">star_border</span>
+                                </button>
+                                <button id="copyBtn"
+                                    class="flex items-center gap-2 text-primary border border-primary/20 bg-primary/5 hover:bg-primary/10 hover:border-primary/40 px-4 py-2 rounded-xl text-sm font-semibold transition-all shadow-sm">
+                                    <span class="material-icons-round text-base">content_copy</span>
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Output Content -->
+                        <div id="outputContent"
+                            class="relative z-10 text-gray-700 leading-relaxed space-y-6 font-normal text-base md:text-lg break-words overflow-wrap-anywhere">
+                            <!-- Content will be dynamically inserted here -->
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Fixed Bottom Input Panel -->
+            <div class="fixed bottom-6 left-0 right-0 pointer-events-none z-50">
+                <div
+                    class="max-w-4xl mx-auto glass-panel rounded-3xl p-3 pointer-events-auto transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/40 ring-offset-2 ring-offset-transparent shadow-2xl mx-4">
+                    <div class="px-4 pt-3 pb-2">
+                        <textarea id="bottomPromptInput"
+                            class="w-full bg-transparent border-none text-gray-900 placeholder-gray-500 focus:ring-0 resize-none h-16 md:h-12 py-2 text-base md:text-lg font-light"
+                            placeholder="Paste your prompt, idea, or instruction here" rows="1"></textarea>
+                    </div>
+
+                    <div
+                        class="px-4 pb-1 pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 border-t border-gray-200/50">
+                        <div class="flex flex-col gap-2 w-full sm:w-auto">
+                            <span
+                                class="text-[10px] uppercase font-bold tracking-wider text-gray-400 hidden sm:block ml-1">Target
+                                Model</span>
+                            <div id="bottomModelPills" class="flex flex-wrap gap-2">
+                                <button data-model="gemini"
+                                    class="bottom-pill px-4 py-1.5 rounded-full bg-white/50 border border-gray-200/60 hover:border-primary/50 text-xs font-medium text-gray-600 hover:bg-primary/5 hover:text-primary transition-all">
+                                    Gemini
+                                </button>
+                                <button data-model="chatgpt"
+                                    class="bottom-pill px-4 py-1.5 rounded-full border border-primary bg-primary/10 text-xs font-bold text-primary shadow-sm shadow-primary/10 transition-all">
+                                    ChatGPT
+                                </button>
+                                <button data-model="perplexity"
+                                    class="bottom-pill px-4 py-1.5 rounded-full bg-white/50 border border-gray-200/60 hover:border-primary/50 text-xs font-medium text-gray-600 hover:bg-primary/5 hover:text-primary transition-all">
+                                    Perplexity
+                                </button>
+                                <button data-model="claude"
+                                    class="bottom-pill px-4 py-1.5 rounded-full bg-white/50 border border-gray-200/60 hover:border-primary/50 text-xs font-medium text-gray-600 hover:bg-primary/5 hover:text-primary transition-all">
+                                    Claude
+                                </button>
+                                <button data-model="others"
+                                    class="bottom-pill px-4 py-1.5 rounded-full bg-white/50 border border-gray-200/60 hover:border-primary/50 text-xs font-medium text-gray-600 hover:bg-primary/5 hover:text-primary transition-all">
+                                    Others
+                                </button>
+                            </div>
+                        </div>
+
+                        <button id="bottomReframeBtn"
+                            class="w-full sm:w-auto bg-primary hover:bg-primary-hover text-white rounded-2xl pl-5 pr-4 py-3 text-sm font-bold flex items-center justify-center gap-2 transition-all transform active:scale-95 shadow-lg shadow-primary/25 group">
+                            Reframe
+                            <span
+                                class="bg-white/20 rounded-md px-1.5 py-0.5 text-[10px] font-mono flex items-center gap-0.5 border border-white/10 group-hover:bg-white/30 transition-colors">
+                                <span class="text-[10px]">ctrl</span>
+                                <span class="material-icons-round text-[10px] rotate-90">subdirectory_arrow_left</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Saved Prompts Section (Only visible in entry state) -->
+    <div id="savedPromptsSection" class="hidden w-full max-w-3xl mx-auto mt-16 px-4 pb-12">
+        <h2 class="text-xl font-semibold mb-6 text-gray-900">Saved Prompts</h2>
+
+        <div id="savedPromptsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <div id="emptyState" class="text-center py-16">
+            <svg class="w-16 h-16 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+            </svg>
+            <p class="text-base font-medium text-gray-600 mb-1">No saved prompts yet</p>
+            <p class="text-sm text-gray-500">Save prompts to reuse them later</p>
+        </div>
+    </div>
+
+    <!-- Spacer -->
+    <div class="h-20"></div>
+
+
+
+    <!-- Auth Modal -->
+    <div id="authModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 p-8 relative">
+            <button id="modalClose" class="absolute top-4 right-4 text-gray-500 hover:text-gray-900 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <h3 class="text-2xl font-semibold text-center mb-2 text-gray-900">Sign in to Re<span
+                    class="text-primary">frame</span></h3>
+            <p class="text-center text-gray-600 mb-8">Save and access your prompts anywhere</p>
+
+            <button id="googleAuthBtn"
+                class="w-full bg-white hover:bg-gray-50 border border-gray-300 text-gray-900 font-medium rounded-full px-6 py-3 flex items-center justify-center gap-3 transition-all shadow-sm">
+                <svg class="w-5 h-5" viewBox="0 0 24 24">
+                    <path fill="#4285F4"
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                    <path fill="#34A853"
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                    <path fill="#FBBC05"
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                    <path fill="#EA4335"
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+                <span>Continue with Google</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="hidden fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full shadow-xl z-50">
+        <span id="toastMessage"></span>
+    </div>
+
+
+
+    <!-- Scripts -->
+    <script src="js/app.js?v=20260106-8"></script>
+
+    <!-- Keyboard shortcut for reframe (Ctrl+Enter) and Auto-resize textarea -->
+    <script>
+        const promptInput = document.getElementById('promptInput');
+
+        // Auto-resize textarea to fit content
+        function autoResize(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = textarea.scrollHeight + 'px';
+        }
+
+        promptInput.addEventListener('input', function () {
+            autoResize(this);
+        });
+
+        // Keyboard shortcut
+        promptInput.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('reframeBtn').click();
+            }
+        });
+
+        // Initialize on load
+        autoResize(promptInput);
+    </script>
+</body>
+
+</html>
